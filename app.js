@@ -2,7 +2,7 @@
    CineMatch — app.js  |  Clean build v4
    ═══════════════════════════════════════════════════════════════════════ */
 
-const API      = "http://127.0.0.1:8000";
+const API      = "https://eco-cart-frontend.onrender.com";
 const TMDB_KEY = "7558a8491c52de18243929b8e827d3f3";
 const TMDB_IMG = "https://image.tmdb.org/t/p/w300";
 
