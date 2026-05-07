@@ -1,5 +1,5 @@
 // ── Config ──────────────────────────────────────────────────
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = "https://eco-cart-frontend.onrender.com/api";
 let sessionScore = 0;
 let chatHistory = [];
 const counters = { bottles: 0, bags: 0, cups: 0, towels: 0 };
