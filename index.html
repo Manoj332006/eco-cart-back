@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GreenGuide – AI Eco Shopping Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Ambient Background ── -->
+  <div class="ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🌿</span>
+      <span class="logo-text">GreenGuide</span>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-tab="shop">Shop</button>
+      <button class="nav-btn" data-tab="analyze">Analyze</button>
+      <button class="nav-btn" data-tab="chat">AI Chat</button>
+      <button class="nav-btn" data-tab="impact">My Impact</button>
+    </nav>
+    <div class="eco-score-badge">
+      <span class="badge-leaf">🌱</span>
+      <span id="sessionScore">0 pts</span>
+    </div>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero" id="tab-shop">
+    <div class="hero-text">
+      <p class="hero-eyebrow">AI-Powered Sustainable Shopping</p>
+      <h1>Shop <em>smarter</em>,<br/>tread <em>lighter.</em></h1>
+      <p class="hero-sub">Every purchase is a vote for the planet. Let AI guide you to choices that matter.</p>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="scrollToProducts()">Browse Eco Products</button>
+        <button class="btn-ghost" onclick="switchTab('chat')">Chat with GreenGuide</button>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <span class="stat-num">8.3B</span>
+        <span class="stat-label">plastic bottles/year</span>
+      </div>
+      <div class="stat-card highlight">
+        <span class="stat-num">∞</span>
+        <span class="stat-label">better choices available</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">70%</span>
+        <span class="stat-label">CO₂ reducible by lifestyle</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Products Section ── -->
+  <section class="section products-section" id="products-section">
+    <div class="section-header">
+      <h2>Curated Eco Products</h2>
+      <div class="filters">
+        <select id="categoryFilter" onchange="filterProducts()">
+          <option value="">All Categories</option>
+          <option value="Personal Care">Personal Care</option>
+          <option value="Kitchen">Kitchen</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Clothing">Clothing</option>
+          <option value="Cleaning">Cleaning</option>
+          <option value="Accessories">Accessories</option>
+        </select>
+        <select id="ecoFilter" onchange="filterProducts()">
+          <option value="">Any Eco Score</option>
+          <option value="9">★ 9–10 (Excellent)</option>
+          <option value="7">★ 7+ (Great)</option>
+          <option value="5">★ 5+ (Good)</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search products…" oninput="filterProducts()" />
+      </div>
+    </div>
+    <div class="products-grid" id="productsGrid">
+      <!-- Populated by JS -->
+    </div>
+  </section>
+
+  <!-- ── Analyze Tab ── -->
+  <section class="section analyze-section hidden" id="tab-analyze">
+    <div class="analyze-container">
+      <div class="analyze-form-card">
+        <h2>Analyze Any Product</h2>
+        <p class="section-sub">Enter a product and our AI will score its environmental impact.</p>
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" id="productName" placeholder="e.g. Nespresso Coffee Pods" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Brand</label>
+            <input type="text" id="productBrand" placeholder="e.g. Nestlé" />
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="productCategory">
+              <option value="">Select…</option>
+              <option>Food & Beverage</option>
+              <option>Personal Care</option>
+              <option>Kitchen</option>
+              <option>Electronics</option>
+              <option>Clothing</option>
+              <option>Cleaning</option>
+              <option>Accessories</option>
+              <option>Home & Garden</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description (optional)</label>
+          <textarea id="productDesc" rows="3" placeholder="Any details about materials, packaging, origin…"></textarea>
+        </div>
+        <button class="btn-primary full-width" id="analyzeBtn" onclick="analyzeProduct()">
+          <span>🔍 Analyze Eco Impact</span>
+        </button>
+      </div>
+
+      <div class="analyze-result hidden" id="analyzeResult">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Chat Tab ── -->
+  <section class="section chat-section hidden" id="tab-chat">
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="chat-avatar">🌿</div>
+        <div>
+          <h3>GreenGuide AI</h3>
+          <span class="online-dot"></span><span class="online-text">Online</span>
+        </div>
+        <div class="chat-suggestions">
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Is cotton eco-friendly?</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Best zero-waste swaps</button>
+          <button class="suggestion-chip" onclick="sendSuggestion(this)">Fast fashion impact</button>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+          <div class="message-bubble">
+            👋 Hi! I'm GreenGuide, your AI-powered eco shopping assistant. I can help you find sustainable products, analyze environmental impact, and make greener choices. What would you like to explore? 🌍
+          </div>
+          <span class="message-time">Now</span>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chatInput" placeholder="Ask about eco-friendly shopping…" onkeydown="if(event.key==='Enter') sendChat()" />
+        <button class="send-btn" onclick="sendChat()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Impact Calculator Tab ── -->
+  <section class="section impact-section hidden" id="tab-impact">
+    <div class="impact-container">
+      <h2>Your Environmental Impact</h2>
+      <p class="section-sub">Calculate how much CO₂ you save by switching to eco-friendly alternatives.</p>
+
+      <div class="impact-inputs">
+        <div class="impact-card">
+          <span class="impact-icon">🍶</span>
+          <label>Plastic bottles<br/>avoided per month</label>
+          <div class="counter">
+            <button onclick="adjust('bottles', -1)">−</button>
+            <span id="bottles-val">0</span>
+            <button onclick="adjust('bottles', 1)">+</button>
+          </div>
+        </div>
+        <div class="impact-card">
+          <span class="impact-icon">🛍️</span>
+          <label>Plastic bags<br/>avoided per month</label>
+          <div class="counter">
+            <button onclick="adjust('bags', -1)">−</button>
+            <span id="bags-val">0</span>
+            <button onclick="adjust('bags', 1)">+</button>
+          </div>
+        </div>
+        <div class="impact-card">
+          <span class="impact-icon">☕</span>
+          <label>Disposable cups<br/>avoided per month</label>
+          <div class="counter">
+            <button onclick="adjust('cups', -1)">−</button>
+            <span id="cups-val">0</span>
+            <button onclick="adjust('cups', 1)">+</button>
+          </div>
+        </div>
+        <div class="impact-card">
+          <span class="impact-icon">🧻</span>
+          <label>Paper towel sheets<br/>avoided per month</label>
+          <div class="counter">
+            <button onclick="adjust('towels', -1)">−</button>
+            <span id="towels-val">0</span>
+            <button onclick="adjust('towels', 1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="calculateImpact()">Calculate My Impact 🌱</button>
+
+      <div class="impact-result hidden" id="impactResult">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <p>🌿 GreenGuide — Every choice is a chance to protect our planet.</p>
+    <p class="footer-small">Powered by Claude AI · Built for a sustainable future</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
