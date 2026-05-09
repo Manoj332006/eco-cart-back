@@ -18,7 +18,6 @@ function switchTab(tab) {
   const section = document.getElementById(`tab-${tab}`);
   if (section) section.classList.remove("hidden");
 
-  // Products section lives outside tab wrapper
   const productsSection = document.getElementById("products-section");
   if (tab === "shop") {
     productsSection.classList.remove("hidden");
@@ -41,36 +40,52 @@ async function loadProducts() {
     const data = await res.json();
     allProducts = data.products || [];
     renderProducts(allProducts);
+    populateCategories();
   } catch (err) {
     document.getElementById("productsGrid").innerHTML =
       `<p style="color:#888; grid-column: 1/-1; text-align:center; padding:2rem;">⚠️ Could not load products. Make sure the backend server is running.</p>`;
   }
 }
 
+function populateCategories() {
+  const categories = [...new Set(allProducts.map((p) => p.category))];
+  const select = document.getElementById("categoryFilter");
+  select.innerHTML = `<option value="">All Categories</option>`;
+  categories.forEach((cat) => {
+    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+  });
+}
+
 function renderProducts(products) {
   const grid = document.getElementById("productsGrid");
   if (!products.length) {
-    grid.innerHTML = `<p style="color:#888; grid-column: 1/-1; text-align:center; padding:2rem;">No products match your filters.</p>`;
+    grid.innerHTML = `<p style="color:#888; grid-column: 1/-1; text-align:center; padding:2rem;">No products found. Try a different search!</p>`;
     return;
   }
 
   grid.innerHTML = products.map((p) => `
-    <div class="product-card" onclick="viewProduct('${p.id}')">
+    <div class="product-card">
       <span class="product-emoji">${p.image || "🌿"}</span>
       <div class="product-name">${p.name}</div>
-      <div class="product-brand">${p.brand}</div>
+      <div class="product-brand">${p.brand} · ${p.category}</div>
       <div class="product-desc">${p.description}</div>
       <div class="eco-score-row">
-        <div class="eco-score">
-          🌱 ${p.ecoScore}/10
-        </div>
-        <div class="product-price">$${p.price.toFixed(2)}</div>
+        <div class="eco-score">🌱 ${p.ecoScore}/10</div>
+        <div class="product-price">${p.currency || "₹"}${p.price}</div>
       </div>
       <div class="score-bar" style="margin: 0.6rem 0;">
         <div class="score-fill" style="width: ${p.ecoScore * 10}%"></div>
       </div>
       <div class="tags-row">
         ${(p.tags || []).slice(0, 3).map((t) => `<span class="tag">${t}</span>`).join("")}
+      </div>
+      <div style="display:flex; gap:0.5rem; margin-top:0.85rem;">
+        <a href="${p.buyLink}" target="_blank" rel="noopener noreferrer" class="buy-btn">
+          🛒 Buy Now
+        </a>
+        <button class="analyze-btn" onclick="analyzeFromProduct('${p.id}')">
+          🔍 Analyze
+        </button>
       </div>
     </div>
   `).join("");
@@ -79,21 +94,25 @@ function renderProducts(products) {
 function filterProducts() {
   const category = document.getElementById("categoryFilter").value;
   const minScore = parseInt(document.getElementById("ecoFilter").value) || 0;
-  const search = document.getElementById("searchInput").value.toLowerCase();
+  const search = document.getElementById("searchInput").value.toLowerCase().trim();
 
   let filtered = allProducts;
   if (category) filtered = filtered.filter((p) => p.category === category);
   if (minScore) filtered = filtered.filter((p) => p.ecoScore >= minScore);
-  if (search) filtered = filtered.filter((p) =>
-    p.name.toLowerCase().includes(search) ||
-    p.brand.toLowerCase().includes(search) ||
-    p.description.toLowerCase().includes(search)
-  );
+  if (search) {
+    filtered = filtered.filter((p) =>
+      p.name.toLowerCase().includes(search) ||
+      p.brand.toLowerCase().includes(search) ||
+      p.description.toLowerCase().includes(search) ||
+      p.category.toLowerCase().includes(search) ||
+      (p.tags || []).some((t) => t.includes(search))
+    );
+  }
 
   renderProducts(filtered);
 }
 
-function viewProduct(id) {
+function analyzeFromProduct(id) {
   const p = allProducts.find((x) => x.id === id);
   if (!p) return;
   switchTab("analyze");
@@ -103,7 +122,6 @@ function viewProduct(id) {
   document.getElementById("productBrand").value = p.brand;
   document.getElementById("productCategory").value = p.category;
   document.getElementById("productDesc").value = p.description;
-  document.getElementById("productName").focus();
 }
 
 // ── AI Product Analyzer ───────────────────────────────────────
@@ -113,10 +131,7 @@ async function analyzeProduct() {
   const category = document.getElementById("productCategory").value;
   const description = document.getElementById("productDesc").value.trim();
 
-  if (!name) {
-    alert("Please enter a product name.");
-    return;
-  }
+  if (!name) { alert("Please enter a product name."); return; }
 
   const btn = document.getElementById("analyzeBtn");
   btn.disabled = true;
@@ -134,12 +149,11 @@ async function analyzeProduct() {
 
     if (!res.ok) throw new Error("Analysis failed");
     const data = await res.json();
-
     renderAnalysis(data, name);
     addScore(data.ecoScore);
   } catch (err) {
     resultEl.classList.remove("hidden");
-    resultEl.innerHTML = `<p style="color:#e53935; padding: 1rem;">⚠️ Failed to analyze product. Please ensure the backend is running and your API key is set.</p>`;
+    resultEl.innerHTML = `<p style="color:#e53935; padding: 1rem;">⚠️ Failed to analyze product. Please ensure the backend is running.</p>`;
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<span>🔍 Analyze Eco Impact</span>`;
@@ -151,12 +165,7 @@ function renderAnalysis(data, productName) {
   resultEl.classList.remove("hidden");
 
   const gradeEmoji = { "A+": "🌟", A: "✅", B: "👍", C: "🟡", D: "⚠️", F: "🚫" };
-  const factorColors = (v) => {
-    if (v >= 8) return "#4a8c5c";
-    if (v >= 6) return "#8bc34a";
-    if (v >= 4) return "#ffc107";
-    return "#f44336";
-  };
+  const factorColors = (v) => v >= 8 ? "#4a8c5c" : v >= 6 ? "#8bc34a" : v >= 4 ? "#ffc107" : "#f44336";
 
   const factors = data.factors || {};
   const factorNames = {
@@ -178,22 +187,16 @@ function renderAnalysis(data, productName) {
       <div style="font-size:0.85rem; color:var(--text-soft); margin-bottom:1.5rem;">${productName}</div>
       <p style="font-size:0.9rem; color:var(--text-mid); line-height:1.6; margin-bottom:1.5rem;">${data.summary || ""}</p>
     </div>
-
     <div class="result-factors">
       ${Object.entries(factorNames).map(([key, label]) => {
         const val = factors[key] || 0;
-        return `
-          <div class="factor-row">
-            <span class="factor-label">${label}</span>
-            <div class="factor-bar">
-              <div class="factor-fill" style="width:${val * 10}%; background:${factorColors(val)};"></div>
-            </div>
-            <span class="factor-num">${val}</span>
-          </div>
-        `;
+        return `<div class="factor-row">
+          <span class="factor-label">${label}</span>
+          <div class="factor-bar"><div class="factor-fill" style="width:${val * 10}%; background:${factorColors(val)};"></div></div>
+          <span class="factor-num">${val}</span>
+        </div>`;
       }).join("")}
     </div>
-
     <div class="result-lists">
       <div class="result-list">
         <h4>✅ Positives</h4>
@@ -204,24 +207,12 @@ function renderAnalysis(data, productName) {
         <ul>${(data.concerns || []).map((c) => `<li><span>•</span>${c}</li>`).join("") || "<li>None noted</li>"}</ul>
       </div>
     </div>
-
     ${data.alternatives?.length ? `
       <div style="margin: 1.25rem 0;">
         <h4 style="font-size:0.85rem; color:var(--text-mid); margin-bottom:0.5rem;">🌱 Greener Alternatives</h4>
-        ${data.alternatives.map((a) => `
-          <div style="padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.85rem;">
-            <strong>${a.name}</strong> — ${a.reason}
-          </div>
-        `).join("")}
-      </div>
-    ` : ""}
-
-    ${data.certifications?.length ? `
-      <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1rem;">
-        ${data.certifications.map((c) => `<span class="tag">🏷️ ${c}</span>`).join("")}
-      </div>
-    ` : ""}
-
+        ${data.alternatives.map((a) => `<div style="padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.85rem;"><strong>${a.name}</strong> — ${a.reason}</div>`).join("")}
+      </div>` : ""}
+    ${data.certifications?.length ? `<div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1rem;">${data.certifications.map((c) => `<span class="tag">🏷️ ${c}</span>`).join("")}</div>` : ""}
     ${data.tip ? `<div class="result-tip">💡 <strong>Tip:</strong> ${data.tip}</div>` : ""}
   `;
 }
@@ -236,7 +227,7 @@ async function sendChat() {
   appendMessage("user", msg);
   chatHistory.push({ role: "user", content: msg });
 
-  const typingEl = appendMessage("bot", "Thinking…", true);
+  const typingEl = appendMessage("bot", "Thinking… 🌿", true);
 
   try {
     const res = await fetch(`${API_BASE}/assistant/chat`, {
@@ -246,10 +237,8 @@ async function sendChat() {
     });
 
     typingEl.remove();
-
     if (!res.ok) throw new Error("Chat failed");
     const data = await res.json();
-
     appendMessage("bot", data.reply);
     chatHistory.push({ role: "assistant", content: data.reply });
     addScore(2);
@@ -263,13 +252,11 @@ function appendMessage(role, text, isTyping = false) {
   const container = document.getElementById("chatMessages");
   const el = document.createElement("div");
   el.className = `message ${role}${isTyping ? " typing" : ""}`;
-
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   el.innerHTML = `
     <div class="message-bubble">${text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}</div>
     <span class="message-time">${now}</span>
   `;
-
   container.appendChild(el);
   container.scrollTop = container.scrollHeight;
   return el;
@@ -295,36 +282,22 @@ async function calculateImpact() {
   });
 
   const total = Object.values(counters).reduce((a, b) => a + b, 0);
-  if (total === 0) {
-    alert("Please adjust at least one counter above zero.");
-    return;
-  }
+  if (total === 0) { alert("Please adjust at least one counter above zero."); return; }
 
   try {
     const res = await fetch(`${API_BASE}/analysis/impact-calculator?${params}`);
     const data = await res.json();
-
     const resultEl = document.getElementById("impactResult");
     resultEl.classList.remove("hidden");
     resultEl.innerHTML = `
       <h3>🌍 Your Monthly Impact</h3>
       <div class="impact-metrics">
-        <div class="impact-metric">
-          <div class="big">${data.totalCO2SavedKg} kg</div>
-          <div class="label">CO₂ Saved</div>
-        </div>
-        <div class="impact-metric">
-          <div class="big">${data.equivalents.treeDaysOfAbsorption}</div>
-          <div class="label">Tree-days of absorption</div>
-        </div>
-        <div class="impact-metric">
-          <div class="big">${data.equivalents.carKmNotDriven} km</div>
-          <div class="label">Car trips avoided</div>
-        </div>
+        <div class="impact-metric"><div class="big">${data.totalCO2SavedKg} kg</div><div class="label">CO₂ Saved</div></div>
+        <div class="impact-metric"><div class="big">${data.equivalents.treeDaysOfAbsorption}</div><div class="label">Tree-days of absorption</div></div>
+        <div class="impact-metric"><div class="big">${data.equivalents.carKmNotDriven} km</div><div class="label">Car trips avoided</div></div>
       </div>
       <div class="impact-message">${data.message}</div>
     `;
-
     addScore(10);
     resultEl.scrollIntoView({ behavior: "smooth" });
   } catch (err) {
@@ -338,8 +311,30 @@ function addScore(pts) {
   document.getElementById("sessionScore").textContent = `${sessionScore} pts`;
 }
 
+// ── Buy button styles injected ─────────────────────────────────
+const style = document.createElement("style");
+style.textContent = `
+  .buy-btn {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.4rem; padding: 0.55rem 0.75rem;
+    background: var(--green-mid); color: white;
+    border-radius: 50px; font-size: 0.82rem; font-weight: 600;
+    text-decoration: none; transition: 0.3s ease;
+    border: none; cursor: pointer;
+  }
+  .buy-btn:hover { background: var(--green-deep); transform: translateY(-1px); }
+  .analyze-btn {
+    flex: 1; padding: 0.55rem 0.75rem;
+    background: var(--green-ghost); color: var(--green-mid);
+    border: 1.5px solid var(--green-pale); border-radius: 50px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: 0.3s ease;
+  }
+  .analyze-btn:hover { background: var(--green-pale); }
+`;
+document.head.appendChild(style);
+
 // ── Init ───────────────────────────────────────────────────────
 loadProducts();
-// Ensure shop tab content visible on start
 document.getElementById("tab-shop").classList.remove("hidden");
 document.getElementById("products-section").classList.remove("hidden");
