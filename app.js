@@ -1,7 +1,6 @@
 const API_BASE = "https://eco-cart-frontend.onrender.com/api";
 let sessionScore = 0;
 let chatHistory = [];
-let allProducts = [];
 let searchTimeout = null;
 const counters = { bottles: 0, bags: 0, cups: 0, towels: 0 };
 
@@ -12,78 +11,74 @@ style.textContent = `
     display:inline-flex;align-items:center;justify-content:center;
     gap:0.4rem;padding:0.55rem 1rem;background:var(--green-mid);color:white;
     border-radius:50px;font-size:0.82rem;font-weight:600;text-decoration:none;
-    transition:0.3s ease;border:none;cursor:pointer;
+    transition:0.3s ease;border:none;cursor:pointer;flex:1;
   }
   .buy-btn:hover{background:var(--green-deep);transform:translateY(-1px);}
   .analyze-btn{
-    padding:0.55rem 1rem;background:var(--green-ghost);color:var(--green-mid);
+    flex:1;padding:0.55rem 1rem;background:var(--green-ghost);color:var(--green-mid);
     border:1.5px solid var(--green-pale);border-radius:50px;font-size:0.82rem;
     font-weight:600;cursor:pointer;transition:0.3s ease;
   }
   .analyze-btn:hover{background:var(--green-pale);}
 
-  /* Search Results Grid */
-  #searchResultsSection {
-    max-width:1200px;margin:0 auto;padding:0 2.5rem 2rem;position:relative;z-index:1;
+  .product-img {
+    width:100%;height:180px;object-fit:contain;padding:0.75rem;background:#f9f9f9;
+    border-radius:var(--radius) var(--radius) 0 0;
   }
-  .sr-header {
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:1.25rem;
-  }
-  .sr-title { font-family:'DM Serif Display',serif;color:var(--green-deep);font-size:1.5rem; }
-  .sr-close {
-    background:none;border:1px solid var(--border);border-radius:50px;
-    padding:0.3rem 0.85rem;cursor:pointer;font-size:0.82rem;color:var(--text-soft);
-    transition:0.2s;
-  }
-  .sr-close:hover{background:var(--green-ghost);color:var(--green-mid);}
-  .sr-grid {
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem;
-    margin-bottom:1.5rem;
-  }
-  .sr-card {
-    background:white;border:1px solid var(--border);border-radius:var(--radius);
-    overflow:hidden;box-shadow:var(--shadow);transition:0.3s;display:flex;flex-direction:column;
-  }
-  .sr-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
-  .sr-img {
-    width:100%;height:180px;object-fit:contain;padding:1rem;background:#f9f9f9;
-  }
-  .sr-img-placeholder {
+  .product-img-placeholder {
     width:100%;height:180px;display:flex;align-items:center;justify-content:center;
     font-size:3.5rem;background:var(--green-ghost);
+    border-radius:var(--radius) var(--radius) 0 0;
   }
-  .sr-body{padding:1rem;flex:1;display:flex;flex-direction:column;}
-  .sr-name{font-weight:600;font-size:0.9rem;color:var(--text-dark);margin-bottom:0.3rem;line-height:1.4;}
-  .sr-brand{font-size:0.75rem;color:var(--text-soft);margin-bottom:0.4rem;}
-  .sr-price{font-weight:700;font-size:1.1rem;color:var(--green-deep);margin-bottom:0.3rem;}
-  .sr-rating{font-size:0.75rem;color:var(--amber);margin-bottom:0.75rem;}
-  .sr-platform{font-size:0.68rem;color:var(--text-soft);margin-top:auto;padding-top:0.5rem;}
-  .sr-actions{display:flex;gap:0.5rem;margin-top:0.75rem;}
 
-  /* Inline analysis */
-  .sr-analysis{
-    background:var(--green-ghost);border-top:1px solid var(--green-pale);
-    padding:1rem;font-size:0.8rem;display:none;
+  .search-state {
+    grid-column:1/-1;text-align:center;padding:4rem 2rem;
   }
-  .sr-analysis.visible{display:block;}
-  .sra-grade{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
+  .search-state h3 {
+    font-family:'DM Serif Display',serif;color:var(--green-deep);
+    font-size:1.8rem;margin-bottom:0.75rem;
+  }
+  .search-state p { color:var(--text-soft);font-size:0.95rem;margin-bottom:1.5rem; }
+
+  .loading-spinner {
+    grid-column:1/-1;text-align:center;padding:4rem;
+    color:var(--text-soft);font-size:1rem;
+  }
+  .loading-spinner .spin {
+    display:inline-block;width:32px;height:32px;border:3px solid var(--green-pale);
+    border-top-color:var(--green-mid);border-radius:50%;
+    animation:spin 0.8s linear infinite;margin-bottom:1rem;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .platform-badge {
+    font-size:0.68rem;color:var(--text-soft);text-align:center;margin-top:0.3rem;
+  }
+  .sr-analysis {
+    background:var(--green-ghost);border-top:1px solid var(--green-pale);
+    padding:1rem;display:none;border-radius:0 0 var(--radius) var(--radius);
+  }
+  .sr-analysis.open{display:block;}
+  .sra-grade-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
   .sra-badge{
     width:42px;height:42px;border-radius:50%;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;border:2px solid;
+    align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;
+    border:2px solid;flex-shrink:0;
   }
   .sra-factors{display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;margin:0.5rem 0;}
   .sra-factor{font-size:0.72rem;color:var(--text-mid);}
   .sra-bar{height:4px;background:#ddd;border-radius:99px;margin-top:2px;overflow:hidden;}
   .sra-fill{height:100%;border-radius:99px;}
-  .sra-tip{font-size:0.72rem;color:var(--earth);background:var(--amber-light);padding:0.4rem;border-radius:6px;margin-top:0.4rem;}
+  .sra-tip{font-size:0.72rem;color:var(--earth);background:var(--amber-light);
+    padding:0.4rem 0.6rem;border-radius:6px;margin-top:0.4rem;}
 
-  /* External links */
-  .ext-links-row{
-    display:flex;gap:0.75rem;flex-wrap:wrap;
-    padding:1rem 0;border-top:1px solid var(--border);margin-top:0.5rem;
+  .ext-row{
+    grid-column:1/-1;display:flex;gap:0.75rem;flex-wrap:wrap;
+    padding:1.5rem;background:white;border:1px solid var(--border);
+    border-radius:var(--radius);align-items:center;
   }
-  .ext-link{
+  .ext-label{font-size:0.82rem;font-weight:600;color:var(--text-mid);}
+  .ext-btn{
     display:inline-flex;align-items:center;gap:0.35rem;padding:0.45rem 1rem;
     border-radius:50px;font-size:0.8rem;font-weight:600;text-decoration:none;transition:0.2s;
   }
@@ -92,12 +87,7 @@ style.textContent = `
   .ext-meesho{background:#f43397;color:white;}
   .ext-nykaa{background:#fc2779;color:white;}
   .ext-indiamart{background:#27ae60;color:white;}
-
-  .search-loading{text-align:center;padding:2rem;color:var(--text-soft);font-style:italic;}
-  .no-api-note{
-    background:var(--amber-light);border:1px solid var(--amber);border-radius:var(--radius);
-    padding:1.25rem;margin-bottom:1.5rem;font-size:0.88rem;color:var(--earth);
-  }
+  .product-rating{font-size:0.75rem;color:#f39c12;margin-bottom:0.4rem;}
 `;
 document.head.appendChild(style);
 
@@ -118,171 +108,178 @@ function switchTab(tab) {
   if (tab === "shop") { ps.classList.remove("hidden"); sec.classList.remove("hidden"); }
   else ps.classList.add("hidden");
 }
+
 function scrollToProducts() {
   document.getElementById("products-section").scrollIntoView({ behavior: "smooth" });
 }
 
-// ── Load Products ─────────────────────────────────────────────
-async function loadProducts() {
-  try {
-    const res = await fetch(`${API_BASE}/products`);
-    const data = await res.json();
-    allProducts = data.products || [];
-    renderProductGrid(allProducts);
-    populateCategories();
-  } catch {
-    document.getElementById("productsGrid").innerHTML =
-      `<p style="color:#888;grid-column:1/-1;text-align:center;padding:2rem;">⚠️ Could not load products. Refresh in 30s.</p>`;
-  }
+// ── Init — show empty state ───────────────────────────────────
+function initShop() {
+  populateCategories();
+  showEmptyState();
 }
 
 function populateCategories() {
-  const cats = [...new Set(allProducts.map(p => p.category))];
   const sel = document.getElementById("categoryFilter");
+  const cats = ["Personal Care","Kitchen","Clothing","Electronics","Cleaning","Home & Garden","Stationery","Food & Beverage","Kids","Sports & Fitness"];
   sel.innerHTML = `<option value="">All Categories</option>`;
   cats.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
 }
 
-// ── SEARCH ────────────────────────────────────────────────────
+function showEmptyState() {
+  const grid = document.getElementById("productsGrid");
+  grid.innerHTML = `
+    <div class="search-state">
+      <h3>🌿 Discover Eco Products</h3>
+      <p>Search for any product above or select a category to find eco-friendly options from Indian stores</p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+        <button class="btn-ghost" onclick="quickSearch('bamboo toothbrush')">🪥 Bamboo Toothbrush</button>
+        <button class="btn-ghost" onclick="quickSearch('steel water bottle')">🥤 Steel Bottle</button>
+        <button class="btn-ghost" onclick="quickSearch('organic cotton')">👕 Organic Cotton</button>
+        <button class="btn-ghost" onclick="quickSearch('solar charger')">☀️ Solar Charger</button>
+        <button class="btn-ghost" onclick="quickSearch('jute bag')">👜 Jute Bag</button>
+      </div>
+    </div>
+  `;
+}
+
+function quickSearch(term) {
+  document.getElementById("searchInput").value = term;
+  filterProducts();
+}
+
+// ── FILTER & SEARCH ───────────────────────────────────────────
 function filterProducts() {
   clearTimeout(searchTimeout);
   const search = document.getElementById("searchInput").value.trim();
   const category = document.getElementById("categoryFilter").value;
   const minScore = parseInt(document.getElementById("ecoFilter").value) || 0;
 
-  // Filter local products
-  let filtered = allProducts;
-  if (category) filtered = filtered.filter(p => p.category === category);
-  if (minScore) filtered = filtered.filter(p => p.ecoScore >= minScore);
-  if (search) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.brand.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      (p.tags||[]).some(t => t.includes(q))
-    );
-  }
-
-  // Remove old search results
-  document.getElementById("searchResultsSection")?.remove();
-
-  if (search.length > 1) {
-    searchTimeout = setTimeout(() => fetchAndShowProducts(search), 500);
-  }
-
-  renderProductGrid(filtered);
-}
-
-async function fetchAndShowProducts(query) {
-  // Remove old section
-  document.getElementById("searchResultsSection")?.remove();
-
-  // Create results section
-  const section = document.createElement("div");
-  section.id = "searchResultsSection";
-  section.innerHTML = `
-    <div class="sr-header">
-      <div class="sr-title">🔍 Results for "${query}"</div>
-      <button class="sr-close" onclick="closeSearch()">✕ Close</button>
-    </div>
-    <div class="search-loading">🔄 Searching Indian eco-friendly stores…</div>
-  `;
-
-  // Insert before products section
-  const productsSection = document.getElementById("products-section");
-  productsSection.parentNode.insertBefore(section, productsSection);
-  section.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  try {
-    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
-    const data = await res.json();
-
-    if (data.source === "amazon" && data.products?.length) {
-      // Real Amazon products
-      section.innerHTML = `
-        <div class="sr-header">
-          <div class="sr-title">🛒 ${data.products.length} products for "${query}"</div>
-          <button class="sr-close" onclick="closeSearch()">✕ Close</button>
-        </div>
-        <div class="sr-grid">
-          ${data.products.map(p => `
-            <div class="sr-card" id="src-${p.id}">
-              ${p.image
-                ? `<img src="${p.image}" class="sr-img" alt="${p.name}" onerror="this.style.display='none'" />`
-                : `<div class="sr-img-placeholder">🌿</div>`}
-              <div class="sr-body">
-                <div class="sr-name">${p.name}</div>
-                <div class="sr-brand">${p.brand}</div>
-                <div class="sr-price">${p.price}</div>
-                ${p.rating ? `<div class="sr-rating">⭐ ${p.rating} (${p.reviews||0} reviews)</div>` : ""}
-                <div class="sr-actions">
-                  <a href="${p.buyLink}" target="_blank" rel="noopener noreferrer" class="buy-btn" style="flex:1;">🛒 Buy on Amazon.in</a>
-                  <button class="analyze-btn" onclick="analyzeSearchCard('${p.id}','${p.name.replace(/'/g,"\\'")}','${(p.brand||"").replace(/'/g,"\\'")}')">🔍 Eco Analyze</button>
-                </div>
-                <div class="sr-platform">Available on Amazon.in</div>
-              </div>
-              <div class="sr-analysis" id="sra-${p.id}"></div>
-            </div>
-          `).join("")}
-        </div>
-        ${buildExtLinks(query)}
-      `;
-    } else {
-      // No API — show external links only
-      section.innerHTML = `
-        <div class="sr-header">
-          <div class="sr-title">🔍 Search "${query}" on Indian stores</div>
-          <button class="sr-close" onclick="closeSearch()">✕ Close</button>
-        </div>
-        <div class="no-api-note">
-          💡 <strong>Direct product results</strong> require a RapidAPI key (set <code>RAPIDAPI_KEY</code> on Render).
-          Meanwhile, click below to search directly on Indian eco-friendly stores:
-        </div>
-        ${buildExtLinks(query)}
-        <div style="margin-top:1.5rem;">
-          <p style="font-size:0.88rem;color:var(--text-soft);margin-bottom:0.75rem;">Or let AI analyze the eco-impact of "${query}":</p>
-          <button class="btn-primary" onclick="aiAnalyzeQuery('${query.replace(/'/g,"\\'")}')">🤖 AI Eco Analyze "${query}"</button>
-        </div>
-      `;
-    }
-  } catch {
-    section.innerHTML = `
-      <div class="sr-header">
-        <div class="sr-title">🔍 "${query}"</div>
-        <button class="sr-close" onclick="closeSearch()">✕ Close</button>
-      </div>
-      ${buildExtLinks(query)}
-    `;
-  }
-}
-
-function buildExtLinks(query) {
-  const enc = encodeURIComponent(query + " eco friendly");
-  return `
-    <div class="ext-links-row">
-      <span style="font-size:0.8rem;color:var(--text-soft);align-self:center;font-weight:600;">Shop directly:</span>
-      <a href="https://www.amazon.in/s?k=${enc}" target="_blank" class="ext-link ext-amazon">🛒 Amazon.in</a>
-      <a href="https://www.flipkart.com/search?q=${enc}" target="_blank" class="ext-link ext-flipkart">🛒 Flipkart</a>
-      <a href="https://www.meesho.com/search?q=${encodeURIComponent(query+' eco')}" target="_blank" class="ext-link ext-meesho">🛒 Meesho</a>
-      <a href="https://www.nykaa.com/search/result/?q=${encodeURIComponent(query)}" target="_blank" class="ext-link ext-nykaa">🛒 Nykaa</a>
-      <a href="https://dir.indiamart.com/search.mp?ss=${encodeURIComponent(query+' eco friendly')}" target="_blank" class="ext-link ext-indiamart">🛒 IndiaMART</a>
-    </div>
-  `;
-}
-
-async function analyzeSearchCard(id, name, brand) {
-  const container = document.getElementById(`sra-${id}`);
-  if (!container) return;
-
-  if (container.classList.contains("visible") && container.innerHTML) {
-    container.classList.toggle("visible");
+  if (!search && !category) {
+    showEmptyState();
     return;
   }
 
-  container.classList.add("visible");
-  container.innerHTML = `<div style="font-style:italic;color:var(--text-soft);font-size:0.8rem;">🤖 Analyzing ${name}…</div>`;
+  const query = search || category;
+  searchTimeout = setTimeout(() => fetchProducts(query, category, minScore), 400);
+}
+
+// ── Fetch real products ───────────────────────────────────────
+async function fetchProducts(query, category, minScore) {
+  const grid = document.getElementById("productsGrid");
+
+  // Show loading
+  grid.innerHTML = `
+    <div class="loading-spinner">
+      <div class="spin"></div>
+      <div>Searching eco-friendly "${query}" products…</div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query + " eco friendly india")}`);
+    const data = await res.json();
+
+    if (data.source === "amazon" && data.products?.length) {
+      let products = data.products;
+
+      // Filter by eco score if set (AI pre-scored)
+      if (minScore > 0) {
+        products = products.filter(p => (p.ecoScore || 5) >= minScore);
+      }
+
+      renderRealProducts(products, query);
+    } else {
+      // No API key — show search links
+      showExternalLinks(query);
+    }
+  } catch {
+    showExternalLinks(query);
+  }
+}
+
+// ── Render real products from Amazon ─────────────────────────
+function renderRealProducts(products, query) {
+  const grid = document.getElementById("productsGrid");
+
+  if (!products.length) {
+    showExternalLinks(query);
+    return;
+  }
+
+  grid.innerHTML = products.map((p, i) => `
+    <div class="product-card" style="padding:0;overflow:hidden;" id="pc-${i}">
+      ${p.image
+        ? `<img src="${p.image}" class="product-img" alt="${p.name}" onerror="this.parentNode.querySelector('.product-img-placeholder').style.display='flex';this.style.display='none'" /><div class="product-img-placeholder" style="display:none;">🌿</div>`
+        : `<div class="product-img-placeholder">🌿</div>`}
+      <div style="padding:1rem;flex:1;display:flex;flex-direction:column;">
+        <div class="product-name">${p.name}</div>
+        <div class="product-brand">${p.brand || "Amazon.in"}</div>
+        ${p.rating ? `<div class="product-rating">⭐ ${p.rating} ${p.reviews ? `(${Number(p.reviews).toLocaleString()} reviews)` : ""}</div>` : ""}
+        <div class="eco-score-row" style="margin:0.5rem 0;">
+          <div class="product-price" style="font-size:1.1rem;font-weight:700;color:var(--green-deep);">${p.price || "View price"}</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:auto;padding-top:0.75rem;">
+          <a href="${p.buyLink}" target="_blank" rel="noopener noreferrer" class="buy-btn">🛒 Buy Now</a>
+          <button class="analyze-btn" onclick="analyzeCard(${i},'${p.name.replace(/'/g,"\\'").replace(/"/g,'\\"').substring(0,60)}','${(p.brand||"").replace(/'/g,"\\'")}')">🔍 Eco Score</button>
+        </div>
+        <div class="platform-badge">Available on Amazon.in</div>
+      </div>
+      <div class="sr-analysis" id="sra-${i}"></div>
+    </div>
+  `).join("") + `
+    <div class="ext-row">
+      <span class="ext-label">Also search on:</span>
+      ${buildExtBtns(query)}
+    </div>
+  `;
+}
+
+// ── Show external links when no API ──────────────────────────
+function showExternalLinks(query) {
+  const grid = document.getElementById("productsGrid");
+  const enc = encodeURIComponent(query);
+  grid.innerHTML = `
+    <div class="search-state">
+      <h3>🛒 Shop "${query}" on Indian Stores</h3>
+      <p>Click any store below to see real eco-friendly products directly</p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;">
+        <a href="https://www.amazon.in/s?k=${enc}+eco+friendly" target="_blank" class="ext-btn ext-amazon" style="padding:0.65rem 1.5rem;font-size:0.9rem;">🛒 Amazon.in</a>
+        <a href="https://www.flipkart.com/search?q=${enc}+eco+friendly" target="_blank" class="ext-btn ext-flipkart" style="padding:0.65rem 1.5rem;font-size:0.9rem;">🛒 Flipkart</a>
+        <a href="https://www.meesho.com/search?q=${enc}" target="_blank" class="ext-btn ext-meesho" style="padding:0.65rem 1.5rem;font-size:0.9rem;">🛒 Meesho</a>
+        <a href="https://www.nykaa.com/search/result/?q=${enc}" target="_blank" class="ext-btn ext-nykaa" style="padding:0.65rem 1.5rem;font-size:0.9rem;">🛒 Nykaa</a>
+        <a href="https://dir.indiamart.com/search.mp?ss=${enc}+eco" target="_blank" class="ext-btn ext-indiamart" style="padding:0.65rem 1.5rem;font-size:0.9rem;">🛒 IndiaMART</a>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:1.5rem;">
+        <p style="margin-bottom:0.75rem;color:var(--text-soft);">Or get AI eco analysis for "${query}":</p>
+        <button class="btn-primary" onclick="aiAnalyzeQuery('${query.replace(/'/g,"\\'")}')">🤖 AI Eco Analyze</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildExtBtns(query) {
+  const enc = encodeURIComponent(query + " eco friendly");
+  return `
+    <a href="https://www.amazon.in/s?k=${enc}" target="_blank" class="ext-btn ext-amazon">Amazon.in</a>
+    <a href="https://www.flipkart.com/search?q=${enc}" target="_blank" class="ext-btn ext-flipkart">Flipkart</a>
+    <a href="https://www.meesho.com/search?q=${encodeURIComponent(query)}" target="_blank" class="ext-btn ext-meesho">Meesho</a>
+    <a href="https://www.nykaa.com/search/result/?q=${encodeURIComponent(query)}" target="_blank" class="ext-btn ext-nykaa">Nykaa</a>
+  `;
+}
+
+// ── Inline Eco Analyze ────────────────────────────────────────
+async function analyzeCard(idx, name, brand) {
+  const container = document.getElementById(`sra-${idx}`);
+  if (!container) return;
+
+  if (container.classList.contains("open")) {
+    container.classList.remove("open");
+    return;
+  }
+
+  container.classList.add("open");
+  container.innerHTML = `<div style="font-style:italic;color:var(--text-soft);font-size:0.8rem;padding:0.5rem;">🤖 Analyzing eco impact…</div>`;
 
   try {
     const res = await fetch(`${API_BASE}/search/analyze`, {
@@ -292,17 +289,21 @@ async function analyzeSearchCard(id, name, brand) {
     });
     if (!res.ok) throw new Error();
     const data = await res.json();
+
     const gc = {"A+":"#00c853",A:"#43a047",B:"#8bc34a",C:"#ffc107",D:"#ff7043",F:"#f44336"};
     const color = gc[data.grade] || "#888";
     const fc = v => v>=8?"#4a8c5c":v>=6?"#8bc34a":v>=4?"#ffc107":"#f44336";
     const f = data.factors || {};
+
     container.innerHTML = `
-      <div class="sra-grade">
+      <div class="sra-grade-row">
         <div class="sra-badge" style="border-color:${color};color:${color};">
           <span>${data.ecoScore}</span><span style="font-size:0.55rem;">/10</span>
         </div>
         <div>
-          <div style="font-weight:700;color:${color};">Grade ${data.grade}</div>
+          <div style="font-weight:700;color:${color};font-size:0.9rem;">
+            Grade ${data.grade} — ${data.ecoScore>=8?"Excellent 🌟":data.ecoScore>=6?"Good ✅":data.ecoScore>=4?"Average 🟡":"Poor ⚠️"}
+          </div>
           <div style="font-size:0.75rem;color:var(--text-soft);">${data.summary||""}</div>
         </div>
       </div>
@@ -313,22 +314,18 @@ async function analyzeSearchCard(id, name, brand) {
             <div class="sra-bar"><div class="sra-fill" style="width:${v*10}%;background:${fc(v)};"></div></div>
           </div>`).join("")}
       </div>
+      ${(data.positives||[]).length?`<div style="font-size:0.75rem;color:#2d5a3d;margin-top:0.3rem;">✅ ${data.positives.slice(0,2).join(" · ")}</div>`:""}
+      ${(data.concerns||[]).length?`<div style="font-size:0.75rem;color:#c62828;margin-top:0.2rem;">⚠️ ${data.concerns[0]}</div>`:""}
+      ${data.alternatives?.length?`<div style="font-size:0.75rem;color:var(--text-mid);margin-top:0.3rem;">🌱 <strong>Greener:</strong> ${data.alternatives.slice(0,2).map(a=>a.name).join(", ")}</div>`:""}
       ${data.tip?`<div class="sra-tip">💡 ${data.tip}</div>`:""}
     `;
     addScore(3);
   } catch {
-    container.innerHTML = `<div style="color:#e53935;font-size:0.78rem;">⚠️ Analysis failed. <button onclick="analyzeSearchCard('${id}','${name}','${brand}')" style="color:var(--green-mid);background:none;border:none;cursor:pointer;text-decoration:underline;">Retry</button></div>`;
+    container.innerHTML = `<div style="color:#e53935;font-size:0.78rem;padding:0.5rem;">⚠️ Analysis failed. <button onclick="analyzeCard(${idx},'${name}','${brand}')" style="color:var(--green-mid);background:none;border:none;cursor:pointer;text-decoration:underline;">Retry</button></div>`;
   }
 }
 
-function closeSearch() {
-  document.getElementById("searchResultsSection")?.remove();
-  document.getElementById("searchInput").value = "";
-  renderProductGrid(allProducts);
-}
-
 function aiAnalyzeQuery(query) {
-  closeSearch();
   switchTab("analyze");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
   document.querySelector('[data-tab="analyze"]').classList.add("active");
@@ -338,50 +335,7 @@ function aiAnalyzeQuery(query) {
   analyzeProduct();
 }
 
-// ── Product Grid ──────────────────────────────────────────────
-function renderProductGrid(products) {
-  const grid = document.getElementById("productsGrid");
-  if (!products.length) {
-    grid.innerHTML = `<p style="color:#888;grid-column:1/-1;text-align:center;padding:2rem;">No products found.</p>`;
-    return;
-  }
-  grid.innerHTML = products.map(p => `
-    <div class="product-card">
-      <span class="product-emoji">${p.image||"🌿"}</span>
-      <div class="product-name">${p.name}</div>
-      <div class="product-brand">${p.brand} · ${p.category}</div>
-      <div class="product-desc">${p.description}</div>
-      <div class="eco-score-row">
-        <div class="eco-score">🌱 ${p.ecoScore}/10</div>
-        <div class="product-price">${p.currency||"₹"}${p.price}</div>
-      </div>
-      <div class="score-bar" style="margin:0.6rem 0;">
-        <div class="score-fill" style="width:${p.ecoScore*10}%"></div>
-      </div>
-      <div class="tags-row">${(p.tags||[]).slice(0,3).map(t=>`<span class="tag">${t}</span>`).join("")}</div>
-      <div style="display:flex;gap:0.5rem;margin-top:0.85rem;">
-        <a href="${p.buyLink}" target="_blank" rel="noopener noreferrer" class="buy-btn">🛒 Buy Now</a>
-        <button class="analyze-btn" onclick="analyzeFromCard('${p.id}')">🔍 Analyze</button>
-      </div>
-      <div style="font-size:0.68rem;color:var(--text-soft);text-align:center;margin-top:0.3rem;">on ${p.platform||"Amazon.in"}</div>
-    </div>
-  `).join("");
-}
-
-function analyzeFromCard(id) {
-  const p = allProducts.find(x => x.id === id);
-  if (!p) return;
-  switchTab("analyze");
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  document.querySelector('[data-tab="analyze"]').classList.add("active");
-  document.getElementById("productName").value = p.name;
-  document.getElementById("productBrand").value = p.brand;
-  document.getElementById("productCategory").value = p.category;
-  document.getElementById("productDesc").value = p.description;
-  analyzeProduct();
-}
-
-// ── Analyzer ──────────────────────────────────────────────────
+// ── Analyzer Tab ──────────────────────────────────────────────
 async function analyzeProduct() {
   const name = document.getElementById("productName").value.trim();
   const brand = document.getElementById("productBrand").value.trim();
@@ -519,6 +473,6 @@ function addScore(pts) {
 }
 
 // ── Init ──────────────────────────────────────────────────────
-loadProducts();
+initShop();
 document.getElementById("tab-shop").classList.remove("hidden");
 document.getElementById("products-section").classList.remove("hidden");
