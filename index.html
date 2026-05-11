@@ -169,63 +169,58 @@
   </section>
 
   <!-- ── Impact Calculator Tab ── -->
- <!-- Replace the impact-inputs div in index.html with this -->
-<div class="impact-inputs">
-  <div class="impact-card">
-    <span class="impact-icon">🍶</span>
-    <label>Plastic bottles<br/>avoided per month</label>
-    <div class="counter">
-      <button onclick="adjust('bottles',-1)">−</button>
-      <span id="bottles-val">0</span>
-      <button onclick="adjust('bottles',1)">+</button>
+<!-- ── Impact Calculator Tab ── -->
+<section class="section impact-section hidden" id="tab-impact">
+  <div class="impact-container">
+    <h2>Your Environmental Impact</h2>
+    <p class="section-sub">Calculate how much CO₂ you save by switching to eco-friendly alternatives.</p>
+
+    <div class="impact-inputs">
+      <div class="impact-card">
+        <span class="impact-icon">🍶</span>
+        <label>Plastic bottles<br/>avoided per month</label>
+        <div class="counter">
+          <button onclick="adjust('bottles', -1)">−</button>
+          <span id="bottles-val">0</span>
+          <button onclick="adjust('bottles', 1)">+</button>
+        </div>
+      </div>
+      <div class="impact-card">
+        <span class="impact-icon">🛍️</span>
+        <label>Plastic bags<br/>avoided per month</label>
+        <div class="counter">
+          <button onclick="adjust('bags', -1)">−</button>
+          <span id="bags-val">0</span>
+          <button onclick="adjust('bags', 1)">+</button>
+        </div>
+      </div>
+      <div class="impact-card">
+        <span class="impact-icon">☕</span>
+        <label>Disposable cups<br/>avoided per month</label>
+        <div class="counter">
+          <button onclick="adjust('cups', -1)">−</button>
+          <span id="cups-val">0</span>
+          <button onclick="adjust('cups', 1)">+</button>
+        </div>
+      </div>
+      <div class="impact-card">
+        <span class="impact-icon">🧻</span>
+        <label>Paper towel sheets<br/>avoided per month</label>
+        <div class="counter">
+          <button onclick="adjust('towels', -1)">−</button>
+          <span id="towels-val">0</span>
+          <button onclick="adjust('towels', 1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="calculateImpact()">Calculate My Impact 🌱</button>
+
+    <div class="impact-result hidden" id="impactResult">
+      <!-- Populated by JS -->
     </div>
   </div>
-  <div class="impact-card">
-    <span class="impact-icon">🛍️</span>
-    <label>Plastic bags<br/>avoided per month</label>
-    <div class="counter">
-      <button onclick="adjust('bags',-1)">−</button>
-      <span id="bags-val">0</span>
-      <button onclick="adjust('bags',1)">+</button>
-    </div>
-  </div>
-  <div class="impact-card">
-    <span class="impact-icon">☕</span>
-    <label>Disposable cups<br/>avoided per month</label>
-    <div class="counter">
-      <button onclick="adjust('cups',-1)">−</button>
-      <span id="cups-val">0</span>
-      <button onclick="adjust('cups',1)">+</button>
-    </div>
-  </div>
-  <div class="impact-card">
-    <span class="impact-icon">🧻</span>
-    <label>Paper towel sheets<br/>avoided per month</label>
-    <div class="counter">
-      <button onclick="adjust('towels',-1)">−</button>
-      <span id="towels-val">0</span>
-      <button onclick="adjust('towels',1)">+</button>
-    </div>
-  </div>
-  <div class="impact-card">
-    <span class="impact-icon">👕</span>
-    <label>Fast fashion items<br/>not bought per month</label>
-    <div class="counter">
-      <button onclick="adjust('clothes',-1)">−</button>
-      <span id="clothes-val">0</span>
-      <button onclick="adjust('clothes',1)">+</button>
-    </div>
-  </div>
-  <div class="impact-card">
-    <span class="impact-icon">📱</span>
-    <label>Electronics repaired<br/>instead of replaced</label>
-    <div class="counter">
-      <button onclick="adjust('electronics',-1)">−</button>
-      <span id="electronics-val">0</span>
-      <button onclick="adjust('electronics',1)">+</button>
-    </div>
-  </div>
-</div>
+</section>
         <!-- Populated by JS -->
       </div>
     </div>
